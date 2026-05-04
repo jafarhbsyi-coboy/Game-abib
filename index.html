@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Ironman Ultimate Battle</title>
+
+<style>
+body {
+    margin: 0;
+    background: black;
+    overflow: hidden;
+    text-align: center;
+    color: white;
+    font-family: Arial;
+}
+
+canvas {
+    display: block;
+    margin: auto;
+    background: radial-gradient(circle, #111, #000);
+    border: 2px solid red;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🦾 Ironman Ultimate Battle 🔥</h2>
+<p>← → jalan | ↑ lompat | Z terbang | SPASI tembak | X laser</p>
+
+<canvas id="game" width="800" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+// GAMBAR
+const ironmanImg = new Image();
+ironmanImg.src = "https://i.ibb.co/7QpKsCX/ironman.png";
+
+const bossImg = new Image();
+bossImg.src = "https://i.ibb.co/zGdGz9x/robot.png";
+
+// PLAYER
+let player = {
+    x: 100,
+    y: 300,
+    w: 60,
+    h: 80,
+    dy: 0,
+    flying: false,
+    hp: 100,
+    energy: 100
+};
+
+// BOSS
+let boss = {
+    x: 600,
+    y: 250,
+    w: 120,
+    h: 150,
+    hp: 300,
+    active: true
+};
+
+// BULLETS
+let bullets = [];
+
+// CONTROL
+let keys = {};
+document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+// UPDATE
+function update(){
+
+    // GERAK
+    if(keys["arrowright"]) player.x += 5;
+    if(keys["arrowleft"]) player.x -= 5;
+
+    // TERBANG
+    if(keys["z"] && player.energy > 0){
+        player.y -= 4;
+        player.energy -= 0.5;
+    } else {
+        player.dy += 0.5;
+        player.y += player.dy;
+    }
+
+    // BATAS
+    if(player.y >= 300){
+        player.y = 300;
+        player.dy = 0;
+    }
+
+    if(player.x < 0) player.x = 0;
+    if(player.x > 740) player.x = 740;
+
+    // ENERGY REGEN
+    if(!keys["z"] && player.energy < 100){
+        player.energy += 0.2;
+    }
+
+    // TEMBAK
+    if(keys[" "] && bullets.length < 5){
+        bullets.push({x: player.x+50, y: player.y+30});
+    }
+
+    bullets.forEach((b,i)=>{
+        b.x += 8;
+
+        // HIT BOSS
+        if(
+            b.x < boss.x+boss.w &&
+            b.x+10 > boss.x &&
+            b.y < boss.y+boss.h &&
+            b.y+5 > boss.y
+        ){
+            boss.hp -= 3;
+            bullets.splice(i,1);
+        }
+
+        if(b.x > 800) bullets.splice(i,1);
+    });
+
+    // LASER
+    if(keys["x"] && player.energy > 1){
+        player.energy -= 1;
+
+        if(
+            player.y < boss.y+boss.h &&
+            player.y+player.h > boss.y
+        ){
+            boss.hp -= 1.5;
+        }
+    }
+
+    // BOSS GERAK
+    boss.x += Math.sin(Date.now()/400)*2;
+
+    // SERANG PLAYER
+    if(
+        player.x < boss.x+boss.w &&
+        player.x+player.w > boss.x &&
+        player.y < boss.y+boss.h &&
+        player.y+player.h > boss.y
+    ){
+        player.hp -= 0.3;
+    }
+}
+
+// DRAW
+function draw(){
+    ctx.clearRect(0,0,800,400);
+
+    // GLOW EFFECT
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = "cyan";
+
+    // PLAYER
+    ctx.drawImage(ironmanImg, player.x, player.y, player.w, player.h);
+
+    ctx.shadowBlur = 0;
+
+    // BULLETS
+    ctx.fillStyle = "yellow";
+    bullets.forEach(b=>{
+        ctx.fillRect(b.x, b.y, 10, 5);
+    });
+
+    // LAS
